@@ -33,6 +33,8 @@
                 <a href="yphresies.html" class="active">Υπηρεσίες</a>
                 <a href="h-istoria-mas.html">Η Ιστορία μας</a>
                 <a href="entypwseis.html">Επικοινωνία</a>
+                <a href="club.html">Club Μελών</a>
+                <a href="yphresies.html#faq">Συχνές Ερωτήσεις</a>
                 <div class="nav-social">
                     <a href="https://www.facebook.com/paidotopos.cafe.aggelospito/" target="_blank" rel="noopener"
                         aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
@@ -116,56 +118,114 @@
         </div>
     </section>
 
-    <!-- ΤΑ EVENTS ΜΑΣ — HAPPY HOUR -->
-    <section class="events-showcase happy-hour-section" id="events">
+    <!-- PARTY BOOKING FORM -->
+    <section class="booking-form-section" id="booking">
         <div class="section-container">
-            <h2 class="section-title animate-on-scroll">☕ Τα Events μας</h2>
-            <p class="section-subtitle animate-on-scroll">Η αποκλειστική μας προσφορά — σας περιμένουμε!</p>
+            <h2 class="section-title animate-on-scroll">🎉 Κλείστε το Πάρτυ σας!</h2>
+            <p class="section-subtitle animate-on-scroll">Συμπληρώστε τα βασικά στοιχεία σας και θα επικοινωνήσουμε μαζί
+                σας για να οργανώσουμε μαζί το τέλειο πάρτυ!</p>
 
-            <div class="happy-hour-card-wrapper">
-                <div class="happy-hour-event-card animate-on-scroll">
-                    <div class="event-showcase-badge">🔥 Αποκλειστική Προσφορά</div>
+            <div class="booking-glass-container animate-on-scroll">
+                <form id="bookingForm" class="booking-form" onsubmit="return false;">
 
-                    <!-- Price Hero -->
-                    <div class="happy-hour-card-price-area">
-                        <div class="happy-hour-price-circle large">
-                            <span class="price-label">μόνο</span>
-                            <span class="price-value">8<span class="price-euro">€</span></span>
-                        </div>
-                    </div>
-
-                    <div class="happy-hour-card-body">
-                        <h3>Happy Hour στο Αγγελόσπιτο!</h3>
-                        <p class="happy-hour-offer-text">Είσοδος παιδότοπου + Ρόφημα <em>(Καφές, Σοκολάτα ή Τσάι)</em>
-                        </p>
-
-                        <div class="happy-hour-toast-badge card-toast-badge">
-                            <span class="toast-badge-star">⭐</span>
-                            <span>Extra Bonus</span>
-                            <strong>Αν πεινάσετε, Toast μόνο +1€!</strong>
-                        </div>
-
-                        <div class="event-showcase-meta">
-                            <span class="event-date"><i class="fas fa-calendar-alt"></i> Κάθε Δευτέρα & Τρίτη</span>
-                            <span class="event-time"><i class="fas fa-clock"></i> 18:00 - 20:00</span>
-                        </div>
-
-                        <div class="happy-hour-includes">
-                            <div class="include-item"><i class="fas fa-check-circle"></i> Είσοδος Παιδότοπου</div>
-                            <div class="include-item"><i class="fas fa-check-circle"></i> Καφές, Σοκολάτα ή Τσάι</div>
-                            <div class="include-item"><i class="fas fa-check-circle"></i> Ασφαλές Περιβάλλον Παιχνιδιού
+                    <!-- 1. ΣΤΟΙΧΕΙΑ ΕΠΙΚΟΙΝΩΝΙΑΣ -->
+                    <fieldset class="booking-fieldset">
+                        <legend><span class="legend-icon">📋</span> Στοιχεία Επικοινωνίας</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="parentName">Ονοματεπώνυμο Γονέα</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-user"></i>
+                                    <input type="text" id="parentName" placeholder="Π.χ. Μαρία Παπαδοπούλου" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="phone">Τηλέφωνο Επικοινωνίας</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-phone"></i>
+                                    <input type="tel" id="phone" placeholder="Π.χ. 6971234567" required>
+                                </div>
                             </div>
                         </div>
+                    </fieldset>
 
-                        <a href="tel:2109858628" class="btn btn-primary btn-3d event-cta happy-hour-card-cta">
-                            <i class="fas fa-phone"></i> Κάντε κράτηση τώρα
-                        </a>
-                        <p class="happy-hour-phone-note"><i class="fas fa-phone-alt"></i> 210 9858628 · 697 7614546</p>
+                    <!-- 2. ΣΤΟΙΧΕΙΑ ΕΚΔΗΛΩΣΗΣ -->
+                    <fieldset class="booking-fieldset">
+                        <legend><span class="legend-icon">🎈</span> Στοιχεία Εκδήλωσης</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="eventDate">Ημερομηνία & Ώρα Εκδήλωσης</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    <input type="datetime-local" id="eventDate" required>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="childCount">Πόσα παιδιά περιμένετε;</label>
+                                <div class="number-stepper">
+                                    <button type="button" class="stepper-btn minus"
+                                        onclick="stepValue('childCount',-1)">−</button>
+                                    <input type="number" id="childCount" value="10" min="1" max="50">
+                                    <button type="button" class="stepper-btn plus"
+                                        onclick="stepValue('childCount',1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- 3. ΣΧΟΛΙΑ -->
+                    <fieldset class="booking-fieldset">
+                        <legend><span class="legend-icon">💬</span> Σχόλια & Παρατηρήσεις</legend>
+                        <div class="form-row">
+                            <div class="form-group form-group-full">
+                                <label for="comments">Πείτε μας οτιδήποτε θέλετε να γνωρίζουμε!</label>
+                                <textarea id="comments" rows="4"
+                                    placeholder="Π.χ. θέμα πάρτυ, αλλεργίες, ειδικές παρατηρήσεις..."></textarea>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- SUBMIT BUTTON -->
+                    <div class="booking-submit-wrapper">
+                        <button type="submit" class="btn-3d-submit" id="bookingSubmitBtn">
+                            <span class="submit-icon">🚀</span>
+                            <span>Θέλω να μάθω περισσότερα!</span>
+                        </button>
+                        <p class="submit-note">Θα επικοινωνήσουμε μαζί σας εντός 24 ωρών!</p>
                     </div>
-                </div>
+                </form>
             </div>
         </div>
     </section>
+
+    <script>
+        // Number stepper
+        function stepValue(id, delta) {
+            const inp = document.getElementById(id);
+            let v = parseInt(inp.value) || 0;
+            v += delta;
+            const mn = parseInt(inp.min);
+            const mx = parseInt(inp.max);
+            if (!isNaN(mn) && v < mn) v = mn;
+            if (!isNaN(mx) && v > mx) v = mx;
+            inp.value = v;
+        }
+
+        // Submit handler
+        document.getElementById('bookingForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('bookingSubmitBtn');
+            const origHTML = btn.innerHTML;
+            btn.innerHTML = '<span style="font-size:1.3rem">✅</span> <span>Εστάλη!</span>';
+            btn.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+            btn.style.boxShadow = '0 8px 0 #065f46, 0 12px 24px rgba(16,185,129,0.35)';
+            setTimeout(function () {
+                btn.innerHTML = origHTML;
+                btn.style.background = '';
+                btn.style.boxShadow = '';
+            }, 2500);
+        });
+    </script>
 
     <!-- BAPTISM SECTION -->
     <section class="baptism-section" id="baptism">
@@ -237,11 +297,16 @@
 
             <!-- CTA Button -->
             <div class="member-cta-wrapper animate-on-scroll">
-                <a href="entypwseis.html#contact" class="btn-3d-submit member-cta-btn">
+                <a href="club.html" class="btn-3d-submit member-cta-btn">
+                    <span class="submit-icon">🏆</span>
+                    <span>Γίνε Μέλος του Club!</span>
+                </a>
+                <a href="entypwseis.html#contact" class="btn-3d-submit member-cta-btn"
+                    style="background:linear-gradient(135deg,#8b5cf6,#6366f1);box-shadow:0 8px 0 #4338ca,0 12px 24px rgba(139,92,246,0.35);margin-left:12px;">
                     <span class="submit-icon">🎉</span>
                     <span>Ζήτησέ τη Σήμερα!</span>
                 </a>
-                <p class="member-cta-note">Ζήτησε την κάρτα σου στη reception — είναι δωρεάν!</p>
+                <p class="member-cta-note">Εγγράψου online ή ζήτησε την κάρτα σου στη reception!</p>
             </div>
         </div>
     </section>
@@ -375,9 +440,9 @@
                     <p><i class="fas fa-envelope" style="margin-right:8px;color:var(--pink-primary)"></i><a
                             href="mailto:info@aggelospito.gr">info@aggelospito.gr</a></p>
                     <p style="margin-top:12px;"><i class="fas fa-clock"
-                            style="margin-right:8px;color:var(--pink-primary)"></i>Δευτέρα έως Παρασκευή: 17:00 -
-                        21:00<br>
-                        <span style="padding-left:24px">Σάββατο &amp; Κυριακή: 10:30 - 14:30 &amp; 17:00 - 21:00</span>
+                            style="margin-right:8px;color:var(--pink-primary)"></i>Δευ-Τετ-Παρ, 17:00-21:00<br>
+                        <span style="padding-left:24px">Τρίτη-Πέμπτη 10:00-13:00 &amp; 17:00-21:00</span><br>
+                        <span style="padding-left:24px">Σάβ &amp; Κυρ: 10:30 - 14:30 &amp; 17:00 - 21:00</span>
                     </p>
                 </div>
             </div>

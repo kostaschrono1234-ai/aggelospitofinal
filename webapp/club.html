@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="el">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Club Μελών | Αγγελόσπιτο</title>
+    <meta name="description"
+        content="Γίνε μέλος του Αγγελόσπιτου Club! Επίλεξε το πακέτο συνδρομής σου και απόλαυσε αποκλειστικά προνόμια στον αγαπημένο σου παιδότοπο στο Παλαιό Φάληρο.">
+    <link rel="stylesheet" href="styles.css?v=2.0">
+    <link rel="stylesheet" href="club-styles.css?v=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+
+<body>
+
+    <!-- LOADER -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-spinner"></div>
+    </div>
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- HEADER -->
+    <header class="header" id="header">
+        <nav class="nav-container">
+            <a href="index.html" class="logo">
+                <img src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=204,fit=crop,trim=2.7954545454545454;0;2.7954545454545454;0/1UUr0feKXbjAetOv/logo-removebg-preview-oRJOFhYXhNZiy5tr.png"
+                    alt="Αγγελόσπιτο Logo">
+            </a>
+            <div class="nav-links" id="navLinks">
+                <a href="index.html">Αρχική</a>
+                <a href="o-xwros-mas.html">Ο Χώρος μας</a>
+                <a href="paidika-parti.html">Παιδικά πάρτυ</a>
+                <a href="yphresies.html">Υπηρεσίες</a>
+                <a href="h-istoria-mas.html">Η Ιστορία μας</a>
+                <a href="entypwseis.html">Επικοινωνία</a>
+                <a href="club.html" class="active">Club Μελών</a>
+                <a href="yphresies.html#faq">Συχνές Ερωτήσεις</a>
+                <div class="nav-social">
+                    <a href="https://www.facebook.com/paidotopos.cafe.aggelospito/" target="_blank" rel="noopener"
+                        aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/aggelospito_cafe_paidotopos/" target="_blank" rel="noopener"
+                        aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.tiktok.com/@aggelospito.cafe?_r=1&_t=ZN-92C5CJHMBh0" target="_blank"
+                        rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+            <button class="menu-toggle" id="menuToggle" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </nav>
+        <div class="nav-overlay" id="navOverlay"></div>
+    </header>
+
+    <!-- ======================================================================== -->
+    <!-- SCREEN 1: WELCOME / LOGIN                                                -->
+    <!-- ======================================================================== -->
+    <section class="club-screen active" id="screenLogin">
+        <div class="club-hero">
+            <div class="club-hero-bg">
+                <img src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=1920,fit=crop/1UUr0feKXbjAetOv/dsc_8042-hTbCVp4283RLQkkA.jpg"
+                    alt="Αγγελόσπιτο Club">
+            </div>
+            <div class="club-hero-overlay"></div>
+
+            <!-- Floating ambient orbs -->
+            <div class="hero-orb hero-orb-1"></div>
+            <div class="hero-orb hero-orb-2"></div>
+            <div class="hero-orb hero-orb-3"></div>
+
+            <!-- Floating particles -->
+            <div class="club-particles">
+                <span class="club-particle cp1">✨</span>
+                <span class="club-particle cp2">⭐</span>
+                <span class="club-particle cp3">🌟</span>
+                <span class="club-particle cp4">💖</span>
+                <span class="club-particle cp5">🎉</span>
+                <span class="club-particle cp6">⭐</span>
+                <span class="club-particle cp7">✦</span>
+                <span class="club-particle cp8">💫</span>
+            </div>
+
+            <div class="club-hero-content">
+                <!-- Premium Glass Card -->
+                <div class="login-glass-card">
+                    <div class="login-card-border"></div>
+                    <div class="login-card-glow"></div>
+                    <div class="login-card-inner">
+                        <div class="login-card-shimmer"></div>
+
+                        <div class="club-welcome-badge animate-on-scroll">
+                            <span class="login-badge-dot"></span>
+                            <span class="badge-emoji">🏆</span>
+                            <span>Αποκλειστικό Club</span>
+                        </div>
+
+                        <h1 class="club-hero-title animate-on-scroll">Καλωσήρθες στο<br><span class="highlight-text">Αγγελόσπιτο
+                                Club!</span></h1>
+
+                        <p class="club-hero-subtitle animate-on-scroll">
+                            Γίνε μέλος της μεγάλης μας οικογένειας και απόλαυσε αποκλειστικά προνόμια, εκπτώσεις και δωρεάν
+                            εισόδους!
+                        </p>
+
+                        <!-- Benefits mini-cards -->
+                        <div class="club-benefits-row animate-on-scroll">
+                            <div class="club-benefit-chip">
+                                <span>🎁</span>
+                                <span>1 Μήνας Δωρεάν</span>
+                            </div>
+                            <div class="club-benefit-chip">
+                                <span>🏷️</span>
+                                <span>Αποκλειστικές Εκπτώσεις</span>
+                            </div>
+                            <div class="club-benefit-chip">
+                                <span>🎉</span>
+                                <span>Πρόσκληση σε Events</span>
+                            </div>
+                        </div>
+
+                        <!-- Google Login Button -->
+                        <div class="club-login-area animate-on-scroll">
+                            <div class="login-btn-wrapper">
+                                <div class="login-btn-border"></div>
+                                <button class="club-google-btn" id="googleLoginBtn">
+                                    <div class="google-icon-wrapper">
+                                        <svg viewBox="0 0 48 48" width="24" height="24">
+                                            <path fill="#EA4335"
+                                                d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z">
+                                            </path>
+                                            <path fill="#4285F4"
+                                                d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z">
+                                            </path>
+                                            <path fill="#FBBC05"
+                                                d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z">
+                                            </path>
+                                            <path fill="#34A853"
+                                                d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z">
+                                            </path>
+                                        </svg>
+                                    </div>
+                                    <span>Σύνδεση με Google</span>
+                                </button>
+                            </div>
+                            <p class="club-login-note"><i class="fas fa-lock"></i> Χρησιμοποίησε τον Google λογαριασμό σου για να εγγραφείς αυτόματα!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================================== -->
+    <!-- SCREEN 2: SUBSCRIPTION SELECTION                                          -->
+    <!-- ======================================================================== -->
+    <section class="club-screen sub-dark-screen" id="screenSubscription">
+        <!-- Deep Dark Background Layer -->
+        <div class="sub-bg-layer">
+            <div class="sub-bg-image"></div>
+            <div class="sub-bg-overlay"></div>
+        </div>
+        
+        <!-- Ambient Orbs -->
+        <div class="hero-orb hero-orb-1 sub-orb-1"></div>
+        <div class="hero-orb hero-orb-2 sub-orb-2"></div>
+        <div class="hero-orb hero-orb-3 sub-orb-3"></div>
+
+        <div class="club-section-inner" style="position: relative; z-index: 2;">
+            <!-- User info bar — Premium Dark Glass -->
+            <div class="user-bar-wrapper">
+                <div class="user-bar-border"></div>
+                <div class="club-user-bar" id="userBarSub">
+                    <div class="user-bar-avatar-ring">
+                        <div class="club-user-avatar" id="userAvatarSub"></div>
+                    </div>
+                    <div class="club-user-info">
+                        <span class="club-user-name" id="userNameSub"></span>
+                        <span class="club-user-email" id="userEmailSub"></span>
+                    </div>
+                    <button class="club-logout-btn" id="logoutBtnSub" title="Αποσύνδεση"><i
+                            class="fas fa-sign-out-alt"></i></button>
+                </div>
+            </div>
+
+            <div class="club-section-header sub-dark-header animate-on-scroll">
+                <div class="club-section-badge">🎯</div>
+                <h2>Διάλεξε το Πακέτο σου!</h2>
+                <p>Επίλεξε το πακέτο συνδρομής που ταιριάζει στην οικογένειά σου</p>
+            </div>
+
+            <div class="club-plans-grid">
+                <!-- PLAN 1: Basic -->
+                <div class="club-plan-card" style="opacity: 1 !important; transform: none !important;"
+                    data-plan="basic">
+                    <div class="plan-card-border"></div>
+                    <div class="plan-card-glow"></div>
+                    <div class="plan-card-inner">
+                        <!-- Shimmer overlay -->
+                        <div class="plan-shimmer"></div>
+                        <!-- Floating particles -->
+                        <span class="plan-particle pp1">✦</span>
+                        <span class="plan-particle pp2">✧</span>
+                        <span class="plan-particle pp3">✦</span>
+
+                        <!-- Badge pill -->
+                        <div class="plan-badge-pill">
+                            <span class="plan-badge-dot"></span>
+                            <span>Δημοφιλές</span>
+                        </div>
+
+                        <!-- Icon with glow ring -->
+                        <div class="plan-icon-wrapper">
+                            <div class="plan-icon-ring"></div>
+                            <div class="plan-icon">🌟</div>
+                        </div>
+
+                        <h3 class="plan-title">Basic Family</h3>
+
+                        <div class="plan-price">
+                            <span class="price-amount">15€</span>
+                            <span class="price-period">/μήνα</span>
+                            <div class="price-underline"></div>
+                        </div>
+
+                        <div class="plan-bonus">
+                            <span class="bonus-icon">🎁</span>
+                            <span>1 Μήνας ΔΩΡΕΑΝ!</span>
+                        </div>
+
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check-circle"></i> 4 δωρεάν είσοδοι/μήνα</li>
+                            <li><i class="fas fa-check-circle"></i> 10% έκπτωση στο καφέ</li>
+                            <li><i class="fas fa-check-circle"></i> Πρόσβαση σε εβδομαδιαίες δραστηριότητες</li>
+                            <li><i class="fas fa-check-circle"></i> Κάρτα μέλους Premium</li>
+                            <li><i class="fas fa-check-circle"></i> Ειδικές εκπτώσεις γενεθλίων</li>
+                        </ul>
+
+                        <div class="plan-divider"></div>
+
+                        <button class="plan-select-btn" onclick="selectPlan('basic')">
+                            <span>Επιλογή Πακέτου</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- PLAN 2: Premium -->
+                <div class="club-plan-card premium" style="opacity: 1 !important; transform: none !important;"
+                    data-plan="premium">
+                    <div class="plan-card-border premium-border"></div>
+                    <div class="plan-card-glow premium-glow"></div>
+                    <div class="plan-card-inner">
+                        <!-- Shimmer overlay -->
+                        <div class="plan-shimmer"></div>
+                        <!-- Floating particles -->
+                        <span class="plan-particle pp1">✦</span>
+                        <span class="plan-particle pp2">⭐</span>
+                        <span class="plan-particle pp3">✧</span>
+                        <span class="plan-particle pp4">💎</span>
+
+                        <!-- Badge pill -->
+                        <div class="plan-badge-pill premium-badge">
+                            <span class="plan-badge-dot"></span>
+                            <span>⭐ Best Value</span>
+                        </div>
+
+                        <!-- Icon with glow ring -->
+                        <div class="plan-icon-wrapper">
+                            <div class="plan-icon-ring premium-ring"></div>
+                            <div class="plan-icon">👑</div>
+                        </div>
+
+                        <h3 class="plan-title">Premium Family</h3>
+
+                        <div class="plan-price">
+                            <span class="price-amount">25€</span>
+                            <span class="price-period">/μήνα</span>
+                            <div class="price-underline premium-underline"></div>
+                        </div>
+
+                        <div class="plan-bonus">
+                            <span class="bonus-icon">🎁</span>
+                            <span>1 Μήνας ΔΩΡΕΑΝ!</span>
+                        </div>
+
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check-circle"></i> Απεριόριστες είσοδοι/μήνα</li>
+                            <li><i class="fas fa-check-circle"></i> 20% έκπτωση στο καφέ</li>
+                            <li><i class="fas fa-check-circle"></i> Δωρεάν συμμετοχή σε δραστηριότητες</li>
+                            <li><i class="fas fa-check-circle"></i> Priority booking για πάρτι</li>
+                            <li><i class="fas fa-check-circle"></i> 15% έκπτωση σε πάρτι γενεθλίων</li>
+                            <li><i class="fas fa-check-circle"></i> Προσκλήσεις σε VIP events</li>
+                            <li><i class="fas fa-check-circle"></i> Δωρεάν κέρασμα κάθε επίσκεψη</li>
+                        </ul>
+
+                        <div class="plan-divider premium-divider"></div>
+
+                        <button class="plan-select-btn premium-btn" onclick="selectPlan('premium')">
+                            <span>Επιλογή Πακέτου</span>
+                            <i class="fas fa-crown"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Back button -->
+            <div class="club-back-row">
+                <button class="club-back-btn dark-glass-back" onclick="showScreen('screenLogin')">
+                    <div class="back-btn-glow"></div>
+                    <i class="fas fa-arrow-left"></i> <span>Επιστροφή</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================================== -->
+    <!-- SCREEN 3: CONFIRMATION / SUCCESS                                          -->
+    <!-- ======================================================================== -->
+    <section class="club-screen" id="screenSuccess">
+        <div class="club-section-inner">
+            <div class="club-success-container animate-on-scroll">
+                <!-- Confetti canvas -->
+                <canvas id="confettiCanvas" class="confetti-canvas"></canvas>
+
+                <div class="success-icon-wrapper">
+                    <div class="success-icon-ring"></div>
+                    <div class="success-icon">✅</div>
+                </div>
+
+                <h2 class="success-title">Η Αίτησή σου Υποβλήθηκε!</h2>
+                <p class="success-subtitle">Ευχαριστούμε που επέλεξες το <strong id="selectedPlanName">—</strong>!</p>
+
+                <div class="success-status-badge">
+                    <span class="status-dot pending"></span>
+                    <span>Κατάσταση: Εκκρεμής Ενεργοποίηση</span>
+                </div>
+
+                <div class="success-info-card">
+                    <div class="info-card-icon"><i class="fas fa-store"></i></div>
+                    <h4>Πώς θα ενεργοποιήσεις τη συνδρομή σου;</h4>
+                    <div class="success-steps">
+                        <div class="success-step">
+                            <div class="step-number">1</div>
+                            <p>Επισκέψου το <strong>Αγγελόσπιτο</strong> στην<br><strong>Κ. Παλαιολόγου 11, Παλαιό
+                                    Φάληρο</strong></p>
+                        </div>
+                        <div class="success-step">
+                            <div class="step-number">2</div>
+                            <p>Δώσε το <strong>email σου</strong> στη reception</p>
+                        </div>
+                        <div class="success-step">
+                            <div class="step-number">3</div>
+                            <p>Ολοκλήρωσε την <strong>πληρωμή</strong> επί τόπου</p>
+                        </div>
+                        <div class="success-step">
+                            <div class="step-number">4</div>
+                            <p>Η συνδρομή σου <strong>ενεργοποιείται αμέσως!</strong></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="success-contact">
+                    <p><i class="fas fa-phone"></i> <a href="tel:2109858628">210 9858628</a> — <a
+                            href="tel:6977614546">6977614546</a></p>
+                    <p><i class="fas fa-clock"></i> Δευ-Παρ 17:00-21:00 | Σ/Κ 10:30-14:30 & 17:00-21:00</p>
+                </div>
+
+                <div class="success-actions">
+                    <button class="club-btn-primary" onclick="showScreen('screenDashboard')">
+                        <i class="fas fa-user"></i> Το Προφίλ μου
+                    </button>
+                    <a href="index.html" class="club-btn-outline">
+                        <i class="fas fa-home"></i> Αρχική Σελίδα
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================================== -->
+    <!-- SCREEN 4: MEMBER DASHBOARD                                                -->
+    <!-- ======================================================================== -->
+    <section class="club-screen" id="screenDashboard">
+        <div class="club-section-inner dash-dark-backdrop">
+
+            <!-- Section header -->
+            <div class="dash-section-title animate-on-scroll">
+                <div class="dash-title-icon">👤</div>
+                <h2>Το Προφίλ μου</h2>
+                <p>Διαχειρίσου τη συνδρομή σου και δες τα στατιστικά σου</p>
+            </div>
+
+            <!-- User profile header — Premium Card -->
+            <div class="club-dash-header animate-on-scroll">
+                <div class="dash-card-border"></div>
+                <div class="dash-profile-card">
+                    <!-- Cover banner -->
+                    <div class="dash-cover">
+                        <div class="dash-cover-gradient"></div>
+                        <div class="dash-cover-mesh"></div>
+                        <!-- Floating particles -->
+                        <span class="dash-cover-particle dp1">✨</span>
+                        <span class="dash-cover-particle dp2">⭐</span>
+                        <span class="dash-cover-particle dp3">💖</span>
+                    </div>
+
+                    <!-- Logout floating button -->
+                    <button class="dash-logout-float" id="logoutBtnDash" title="Αποσύνδεση">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+
+                    <!-- Profile body -->
+                    <div class="dash-profile-body">
+                        <!-- Avatar with glowing ring -->
+                        <div class="dash-avatar-wrapper">
+                            <div class="dash-avatar-ring"></div>
+                            <div class="dash-avatar" id="dashAvatar">
+                                <img src="" alt="Avatar" id="dashAvatarImg">
+                            </div>
+                            <div class="dash-tier-badge" id="dashTierBadge" title="Premium Member">👑</div>
+                        </div>
+
+                        <!-- User info -->
+                        <div class="dash-user-info">
+                            <h2 id="dashUserName" class="dash-user-name-gradient">—</h2>
+                            <div class="dash-email-pill">
+                                <i class="fas fa-envelope"></i>
+                                <span id="dashUserEmail">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Meta chips -->
+                        <div class="dash-meta-chips">
+                            <div class="dash-meta-chip">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>Μέλος από: </span>
+                                <strong id="dashMemberSince">—</strong>
+                            </div>
+                            <div class="dash-meta-chip">
+                                <i class="fas fa-star"></i>
+                                <span id="dashProfilePlan">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Membership Status Card -->
+            <div class="dash-status-card animate-on-scroll" id="dashStatusCard">
+                <div class="status-card-glow"></div>
+                <div class="status-card-inner">
+                    <div class="status-icon" id="dashStatusIcon">⏳</div>
+                    <div class="status-info">
+                        <h3 id="dashPlanTitle">—</h3>
+                        <div class="status-badge" id="dashStatusBadge">
+                            <span class="status-dot" id="dashStatusDot"></span>
+                            <span id="dashStatusText">—</span>
+                        </div>
+                    </div>
+                    <div class="status-dates">
+                        <div class="status-date-item">
+                            <span class="date-label">Εγγραφή</span>
+                            <span class="date-value" id="dashSignupDate">—</span>
+                        </div>
+                        <div class="status-date-item">
+                            <span class="date-label">Λήξη</span>
+                            <span class="date-value" id="dashExpiryDate">—</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="dash-stats-grid animate-on-scroll">
+                <div class="dash-stat-card">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-glow"></div>
+                        <div class="stat-icon">📊</div>
+                    </div>
+                    <div class="stat-value" id="dashTotalVisits">0</div>
+                    <div class="stat-label">Επισκέψεις</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-glow"></div>
+                        <div class="stat-icon">📅</div>
+                    </div>
+                    <div class="stat-value" id="dashThisMonth">0</div>
+                    <div class="stat-label">Αυτόν τον Μήνα</div>
+                </div>
+                <div class="dash-stat-card">
+                    <div class="stat-icon-wrapper">
+                        <div class="stat-icon-glow"></div>
+                        <div class="stat-icon">🔥</div>
+                    </div>
+                    <div class="stat-value" id="dashStreak">0</div>
+                    <div class="stat-label">Σερί Εβδομάδων</div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="dash-actions animate-on-scroll">
+                <a href="javascript:void(0)" onclick="showScreen('screenSubscription')" class="dash-action-card dash-action-highlight">
+                    <div class="action-icon-circle">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="action-text">
+                        <span class="action-title">Τα Πακέτα μας</span>
+                        <span class="action-subtitle">Αναβάθμιση & Πακέτα</span>
+                    </div>
+                </a>
+                <a href="yphresies.html" class="dash-action-card">
+                    <div class="action-icon-circle">
+                        <i class="fas fa-calendar-alt"></i>
+                    </div>
+                    <div class="action-text">
+                        <span class="action-title">Δραστηριότητες</span>
+                        <span class="action-subtitle">Εβδομαδιαίο πρόγραμμα</span>
+                    </div>
+                </a>
+                <a href="paidika-parti.html" class="dash-action-card">
+                    <div class="action-icon-circle">
+                        <i class="fas fa-birthday-cake"></i>
+                    </div>
+                    <div class="action-text">
+                        <span class="action-title">Κλείσε Πάρτι</span>
+                        <span class="action-subtitle">Γενέθλια & Events</span>
+                    </div>
+                </a>
+                <a href="entypwseis.html" class="dash-action-card">
+                    <div class="action-icon-circle">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="action-text">
+                        <span class="action-title">Επικοινωνία</span>
+                        <span class="action-subtitle">Στείλε μας μήνυμα</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================================================================== -->
+    <!-- SCREEN 5: ADMIN PANEL                                                     -->
+    <!-- ======================================================================== -->
+    <section class="club-screen" id="screenAdmin">
+        <div class="club-section-inner">
+
+            <!-- Admin Login Gate -->
+            <div class="admin-gate" id="adminGate">
+                <div class="admin-gate-card animate-on-scroll">
+                    <div class="admin-gate-icon">🔐</div>
+                    <h2>Admin Panel</h2>
+                    <p>Εισάγετε τον κωδικό διαχείρισης</p>
+                    <div class="admin-password-group">
+                        <input type="password" id="adminPasswordInput" placeholder="Κωδικός..." class="admin-input">
+                        <button class="club-btn-primary" id="adminLoginBtn" onclick="adminLogin()">
+                            <i class="fas fa-unlock"></i> Είσοδος
+                        </button>
+                    </div>
+                    <p class="admin-error" id="adminError" style="display:none;">❌ Λάθος κωδικός</p>
+                </div>
+            </div>
+
+            <!-- Admin Dashboard (hidden until authenticated) -->
+            <div class="admin-dashboard" id="adminDashboard" style="display:none;">
+
+                <!-- Admin Header -->
+                <div class="admin-header animate-on-scroll">
+                    <h2><i class="fas fa-shield-alt"></i> Διαχείριση Club</h2>
+                    <button class="club-logout-btn admin-logout" onclick="adminLogout()">
+                        <i class="fas fa-sign-out-alt"></i> Έξοδος Admin
+                    </button>
+                </div>
+
+                <!-- Admin Stats -->
+                <div class="admin-stats-grid animate-on-scroll">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-icon"><i class="fas fa-users"></i></div>
+                        <div class="admin-stat-value" id="adminTotalMembers">0</div>
+                        <div class="admin-stat-label">Σύνολο Μελών</div>
+                    </div>
+                    <div class="admin-stat-card active-stat">
+                        <div class="admin-stat-icon"><i class="fas fa-user-check"></i></div>
+                        <div class="admin-stat-value" id="adminActiveMembers">0</div>
+                        <div class="admin-stat-label">Ενεργά</div>
+                    </div>
+                    <div class="admin-stat-card pending-stat">
+                        <div class="admin-stat-icon"><i class="fas fa-user-clock"></i></div>
+                        <div class="admin-stat-value" id="adminPendingMembers">0</div>
+                        <div class="admin-stat-label">Εκκρεμή</div>
+                    </div>
+                    <div class="admin-stat-card checkin-stat">
+                        <div class="admin-stat-icon"><i class="fas fa-walking"></i></div>
+                        <div class="admin-stat-value" id="adminTodayCheckins">0</div>
+                        <div class="admin-stat-label">Check-ins Σήμερα</div>
+                    </div>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="admin-search-bar animate-on-scroll">
+                    <div class="admin-search-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="adminSearchInput" placeholder="Αναζήτηση μέλους με email ή όνομα..."
+                            class="admin-input" oninput="filterMembers()">
+                    </div>
+                    <div class="admin-filter-buttons">
+                        <button class="admin-filter-btn active" onclick="setFilter('all', this)">Όλα</button>
+                        <button class="admin-filter-btn" onclick="setFilter('active', this)">Ενεργά</button>
+                        <button class="admin-filter-btn" onclick="setFilter('pending', this)">Εκκρεμή</button>
+                        <button class="admin-filter-btn" onclick="setFilter('expired', this)">Ληγμένα</button>
+                    </div>
+                </div>
+
+                <!-- Members Table -->
+                <div class="admin-table-wrapper animate-on-scroll">
+                    <table class="admin-table" id="adminMembersTable">
+                        <thead>
+                            <tr>
+                                <th>Μέλος</th>
+                                <th>Email</th>
+                                <th>Πακέτο</th>
+                                <th>Κατάσταση</th>
+                                <th>Εγγραφή</th>
+                                <th>Επισκέψεις</th>
+                                <th>Ενέργειες</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminMembersBody">
+                            <!-- Filled dynamically -->
+                        </tbody>
+                    </table>
+                    <div class="admin-empty-state" id="adminEmptyState" style="display:none;">
+                        <div class="empty-icon">🔍</div>
+                        <p>Δεν βρέθηκαν μέλη</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer" id="footer">
+        <div class="footer-inner">
+            <div class="footer-col footer-brand">
+                <a href="index.html" class="footer-logo">
+                    <img src="https://assets.zyrosite.com/cdn-cgi/image/format=auto,w=375,h=204,fit=crop,trim=2.7954545454545454;0;2.7954545454545454;0/1UUr0feKXbjAetOv/logo-removebg-preview-oRJOFhYXhNZiy5tr.png"
+                        alt="Αγγελόσπιτο Logo">
+                </a>
+                <p class="footer-desc">Ένας μαγικός χώρος για παιδιά και γονείς στο Παλαιό Φάληρο. Παιδότοπος, καφέ &
+                    δημιουργικά εργαστήρια.</p>
+                <div class="footer-social">
+                    <a href="https://www.facebook.com/paidotopos.cafe.aggelospito/" target="_blank" rel="noopener"
+                        aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="https://www.instagram.com/aggelospito_cafe_paidotopos/" target="_blank" rel="noopener"
+                        aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="https://www.tiktok.com/@aggelospito.cafe?_r=1&_t=ZN-92C5CJHMBh0" target="_blank"
+                        rel="noopener" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h5>Γρήγορες Συνδέσεις</h5>
+                <div class="footer-links">
+                    <a href="index.html">Αρχική</a>
+                    <a href="o-xwros-mas.html">Ο Χώρος μας</a>
+                    <a href="h-istoria-mas.html">Η Ιστορία μας</a>
+                    <a href="yphresies.html">Υπηρεσίες</a>
+                    <a href="paidika-parti.html">Παιδικά πάρτυ</a>
+                    <a href="entypwseis.html">Επικοινωνία</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h5>Επικοινωνία &amp; Ωράριο</h5>
+                <div class="footer-contact">
+                    <p><i class="fas fa-map-marker-alt" style="margin-right:8px;color:var(--pink-primary)"></i>Κ.
+                        Παλαιολόγου 11,
+                        Π.Φάληρο</p>
+                    <p><i class="fas fa-phone" style="margin-right:8px;color:var(--pink-primary)"></i><a
+                            href="tel:2109858628">210 9858628</a></p>
+                    <p><i class="fas fa-mobile-alt" style="margin-right:8px;color:var(--pink-primary)"></i><a
+                            href="tel:6977614546">697 7614546</a></p>
+                    <p><i class="fas fa-envelope" style="margin-right:8px;color:var(--pink-primary)"></i><a
+                            href="mailto:info@aggelospito.gr">info@aggelospito.gr</a></p>
+                    <p style="margin-top:12px;"><i class="fas fa-clock"
+                            style="margin-right:8px;color:var(--pink-primary)"></i>Δευ-Τετ-Παρ, 17:00-21:00<br>
+                        <span style="padding-left:24px">Τρίτη-Πέμπτη 10:00-13:00 &amp; 17:00-21:00</span><br>
+                        <span style="padding-left:24px">Σάβ &amp; Κυρ: 10:30 - 14:30 &amp; 17:00 - 21:00</span>
+                    </p>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h5>Ακολουθήστε μας</h5>
+                <p class="footer-desc" style="margin-bottom:16px">Μείνετε ενημερωμένοι για τα νέα μας, τις εκδηλώσεις
+                    και τις
+                    προσφορές μας!</p>
+                <a href="yphresies.html#faq" class="footer-faq-link"><i class="fas fa-question-circle"
+                        style="margin-right:6px"></i>Συχνές Ερωτήσεις</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            © 2025 Αγγελόσπιτο. Φτιαγμένο με ❤️ για τα παιδιά μας.
+        </div>
+    </footer>
+
+    <!-- BACK TO TOP -->
+    <button class="back-to-top" id="backToTop" aria-label="Back to top"><i class="fas fa-arrow-up"></i></button>
+
+    <script src="script.js"></script>
+    <script src="club-app.js"></script>
+</body>
+
+</html>
