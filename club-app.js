@@ -1,3 +1,7 @@
+import { auth, db } from './firebase-config.js';
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
 /* ===== VAGGELOSPITO CLUB - App Logic ===== */
 /* SPA routing, Firebase Auth/Firestore, Admin Panel, Dashboard */
 
@@ -6,18 +10,9 @@
 
     // ===== CONFIGURATION =====
     const CONFIG = {
-        // Firebase config — replace with your actual Firebase project credentials
-        firebase: {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "000000000000",
-            appId: "YOUR_APP_ID"
-        },
-        adminPassword: 'aggelospito2025', // Simple admin password
-        useDemoMode: true // Set to false when Firebase is configured
-    };
+    adminPassword: "aggelospito2025"
+};
+
 
     // ===== STATE =====
     let currentUser = null;
@@ -32,67 +27,26 @@
     });
 
     function initApp() {
-        // Initialize Firebase or Demo Mode FIRST so data is available
-        if (!CONFIG.useDemoMode && typeof firebase !== 'undefined') {
-            try {
-                firebase.initializeApp(CONFIG.firebase);
-                auth = firebase.auth();
-                db = firebase.firestore();
-            } catch (e) {
-                console.warn('Firebase init failed, falling back to demo mode', e);
-                CONFIG.useDemoMode = true;
-            }
-        }
-
-        // Always load demo data from localStorage (even for admin)
-        if (CONFIG.useDemoMode) {
-            const stored = localStorage.getItem('aggelospito_club_members');
-            if (stored) {
-                members = JSON.parse(stored);
-            }
-        }
-
-        // Check for admin mode via URL
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('admin') === 'true') {
-            showScreen('screenAdmin');
-            return;
-        }
-
-        // Initialize user session
-        if (!CONFIG.useDemoMode && auth) {
-            setupFirebaseAuthListener();
+    // 1) Setup auth listener
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // Logged in
+            currentUser = {
+                uid: user.uid,
+                name: user.displayName,
+                email: user.email,
+                avatar: user.photoURL
+            };
+            localStorage.setItem('aggelospito_club_user', JSON.stringify(currentUser));
+            await checkMemberStatus();
         } else {
-            initDemoSession();
-        }
-    }
-
-    // ===== DEMO SESSION (user session only, data already loaded in initApp) =====
-    function initDemoSession() {
-        // Check if user is already logged in
-        const storedUser = localStorage.getItem('aggelospito_club_user');
-        if (storedUser) {
-            currentUser = JSON.parse(storedUser);
-            const member = findMemberByEmail(currentUser.email);
-            if (member) {
-                showScreen('screenDashboard');
-                updateDashboard(member);
-            } else {
-                showScreen('screenSubscription');
-                updateUserBars();
-            }
-        } else {
+            // Logged out
+            currentUser = null;
+            localStorage.removeItem('aggelospito_club_user');
             showScreen('screenLogin');
         }
-    }
-
-    function saveMembers() {
-        localStorage.setItem('aggelospito_club_members', JSON.stringify(members));
-    }
-
-    function findMemberByEmail(email) {
-        return members.find(m => m.email === email);
-    }
+    });
+}
 
     // ===== FIREBASE AUTH =====
     function setupFirebaseAuthListener() {
@@ -112,33 +66,47 @@
     }
 
     async function checkMemberStatus() {
-        if (CONFIG.useDemoMode) {
-            const member = findMemberByEmail(currentUser.email);
-            if (member) {
+    try {
+        const userDocRef = doc(db, 'members', currentUser.uid);
+        const docSnap = await getDoc(userDocRef);
+        
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Check if admin
+            if (data.isAdmin) {
+                document.getElementById('adminGate').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                showScreen('screenAdmin');
+                refreshAdminPanel();
+            } else if (data.packageChosen && data.packageChosen !== 'none') {
                 showScreen('screenDashboard');
-                updateDashboard(member);
+                updateDashboard(data);
             } else {
                 showScreen('screenSubscription');
                 updateUserBars();
             }
         } else {
-            // Firestore lookup
-            try {
-                const doc = await db.collection('members').doc(currentUser.email).get();
-                if (doc.exists) {
-                    showScreen('screenDashboard');
-                    updateDashboard(doc.data());
-                } else {
-                    showScreen('screenSubscription');
-                    updateUserBars();
-                }
-            } catch (e) {
-                console.error('Firestore error', e);
-                showScreen('screenSubscription');
-                updateUserBars();
-            }
+            // Create user document
+            const newMember = {
+                uid: currentUser.uid,
+                displayName: currentUser.name,
+                email: currentUser.email,
+                avatar: currentUser.avatar || '',
+                packageChosen: "none",
+                registrationDate: serverTimestamp(),
+                isAdmin: false,
+                status: 'pending',
+                checkins: [],
+                totalVisits: 0
+            };
+            await setDoc(userDocRef, newMember);
+            showScreen('screenSubscription');
+            updateUserBars();
         }
+    } catch (e) {
+        console.error("Error fetching user data", e);
     }
+}
 
     // ===== SCREEN ROUTING =====
     window.showScreen = function (screenId) {
@@ -179,13 +147,14 @@
     // ===== GOOGLE LOGIN =====
     document.getElementById('googleLoginBtn')?.addEventListener('click', () => {
         if (CONFIG.useDemoMode) {
-            demoLogin();
+            signInWithGoogle();
         } else {
-            firebaseGoogleLogin();
+            // firebaseGoogleLogin();
+            signInWithGoogle();
         }
     });
 
-    function demoLogin() {
+    async function demoLogin() {
         // Simulate Google login with a prompt
         const name = prompt('🔐 Demo Mode\n\nΕισάγετε το ονοματεπώνυμό σας:', 'Μαρία Παπαδοπούλου');
         if (!name) return;
@@ -213,23 +182,26 @@
     }
 
     function firebaseGoogleLogin() {
-        const provider = new firebase.auth.GoogleAuthProvider();
-        auth.signInWithPopup(provider).catch(err => {
-            console.error('Google sign-in error:', err);
-            alert('Αποτυχία σύνδεσης. Δοκιμάστε ξανά.');
-        });
+        // const provider = new firebase.auth.GoogleAuthProvider();
+        // auth.signInWithPopup(provider).catch(err => {
+        //     console.error('Google sign-in error:', err);
+        //     alert('Αποτυχία σύνδεσης. Δοκιμάστε ξανά.');
+        // });
+        alert('Firebase is disabled in Phase 1 mode.');
     }
 
     // ===== LOGOUT =====
-    document.getElementById('logoutBtnSub')?.addEventListener('click', logout);
-    document.getElementById('logoutBtnDash')?.addEventListener('click', logout);
+    document.getElementById('logoutBtnSub')?.addEventListener('click', window.clubLogout);
+    document.getElementById('logoutBtnDash')?.addEventListener('click', window.clubLogout);
 
-    function logout() {
-        currentUser = null;
-        localStorage.removeItem('aggelospito_club_user');
-        if (auth) auth.signOut();
-        showScreen('screenLogin');
-    }
+    
+window.clubLogout = async function() {
+    await signOut(auth);
+    currentUser = null;
+    localStorage.removeItem('aggelospito_club_user');
+    showScreen('screenLogin');
+};
+
 
     // ===== UPDATE USER BARS =====
     function updateUserBars() {
@@ -253,49 +225,29 @@
     }
 
     // ===== PLAN SELECTION =====
-    window.selectPlan = function (planType) {
-        if (!currentUser) {
-            showScreen('screenLogin');
-            return;
-        }
+    
+window.selectPlan = async function(planType) {
+    if (!currentUser) {
+        showScreen('screenLogin');
+        return;
+    }
+    const planNames = { basic: 'Basic Family (15€/μήνα)', premium: 'Premium Family (25€/μήνα)' };
 
-        const planNames = {
-            basic: 'Basic Family (15€/μήνα)',
-            premium: 'Premium Family (25€/μήνα)'
-        };
-
-        const now = new Date();
-        const newMember = {
-            name: currentUser.name,
-            email: currentUser.email,
-            avatar: currentUser.avatar || '',
-            plan: planType,
+    try {
+        const userDocRef = doc(db, 'members', currentUser.uid);
+        await updateDoc(userDocRef, {
+            packageChosen: planType,
             planName: planNames[planType],
-            status: 'pending', // pending, active, expired
-            signupDate: now.toISOString(),
-            activationDate: null,
-            expiryDate: null,
-            checkins: [],
-            totalVisits: 0
-        };
-
-        if (CONFIG.useDemoMode) {
-            // Remove existing entry if any
-            members = members.filter(m => m.email !== currentUser.email);
-            members.push(newMember);
-            saveMembers();
-        } else {
-            // Save to Firestore
-            db.collection('members').doc(currentUser.email).set(newMember)
-                .catch(err => console.error('Firestore save error:', err));
-        }
-
-        // Update success screen
+            status: 'pending'
+        });
         document.getElementById('selectedPlanName').textContent = planNames[planType];
-
-        // Show success screen
         showScreen('screenSuccess');
-    };
+    } catch (error) {
+        console.error("Failed to update subscription", error);
+        alert("Σφάλμα ενημέρωσης: " + error.message);
+    }
+};
+
 
     // ===== CONFETTI EFFECT =====
     function launchConfetti() {
@@ -543,12 +495,15 @@
             updateAdminStats(members);
         } else {
             // Fetch from Firestore
+            /*
             db.collection('members').get().then(snapshot => {
                 const firestoreMembers = [];
                 snapshot.forEach(doc => firestoreMembers.push({ ...doc.data(), id: doc.id }));
                 renderAdminMembers(firestoreMembers);
                 updateAdminStats(firestoreMembers);
             }).catch(err => console.error('Admin fetch error:', err));
+            */
+            renderAdminMembers(members);
         }
     }
 
@@ -663,6 +618,7 @@
                 refreshAdminPanel();
             }
         } else {
+            /*
             const now = new Date();
             const expiry = new Date(now);
             expiry.setMonth(expiry.getMonth() + 13);
@@ -673,6 +629,7 @@
                 expiryDate: expiry.toISOString()
             }).then(() => refreshAdminPanel())
                 .catch(err => console.error('Activate error:', err));
+            */
         }
     };
 
@@ -692,6 +649,7 @@
                 showToast(`✅ Check-in: ${member.name}`);
             }
         } else {
+            /*
             db.collection('members').doc(email).update({
                 checkins: firebase.firestore.FieldValue.arrayUnion(now),
                 totalVisits: firebase.firestore.FieldValue.increment(1)
@@ -699,6 +657,7 @@
                 refreshAdminPanel();
                 showToast(`✅ Check-in recorded`);
             }).catch(err => console.error('Checkin error:', err));
+            */
         }
     };
 
@@ -768,4 +727,13 @@
         setTimeout(checkExpirations, 1000);
     }
 
-})();
+
+async function signInWithGoogle() {
+    const provider = new GoogleAuthProvider();
+    try {
+        await signInWithPopup(auth, provider);
+    } catch (error) {
+        console.error("Google login failed", error);
+        alert("Αποτυχία σύνδεσης: " + error.message);
+    }
+}
