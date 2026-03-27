@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if the current user is an admin
+    function isAdmin() {
+      // We look up the 'isAdmin' field in the authenticated user's profile document
+      return get(/databases/$(database)/documents/members/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    match /members/{userId} {
+      
+      // CREATE: Authenticated users can create their own document
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // READ: Users can read their own document. Admins can read (get/list) any document.
+      allow read: if (request.auth != null && request.auth.uid == userId) || isAdmin();
+      
+      // UPDATE: 
+      // Users can update their own document, but we restrict them from maliciously granting themselves admin rights
+      // Admins can update any document.
+      allow update: if (request.auth != null && request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']))) 
+                    || isAdmin();
+      
+      // DELETE: Completely disabled for all client-side calls. Delete must be done via Firebase Console.
+      allow delete: if false;
+
+    }
+
+    // Deny access to any other unspecified collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

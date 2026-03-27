@@ -1,6 +1,6 @@
 import { auth, db } from './firebase-config.js';
-import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
-import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+import { signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, setPersistence, browserSessionPersistence } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs, onSnapshot, increment, arrayUnion } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
 /* ===== VAGGELOSPITO CLUB - App Logic ===== */
 /* SPA routing, Firebase Auth/Firestore, Admin Panel, Dashboard */
@@ -8,18 +8,9 @@ import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } 
 (function () {
     'use strict';
 
-    // ===== CONFIGURATION =====
-    const CONFIG = {
-    adminPassword: "aggelospito2025"
-};
-
-
     // ===== STATE =====
     let currentUser = null;
-    let members = []; // In-memory member list for demo mode
     let currentFilter = 'all';
-    let db = null;
-    let auth = null;
 
     // ===== INITIALIZATION =====
     document.addEventListener('DOMContentLoaded', () => {
@@ -27,86 +18,83 @@ import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } 
     });
 
     function initApp() {
-    // 1) Setup auth listener
-    onAuthStateChanged(auth, async (user) => {
-        if (user) {
-            // Logged in
-            currentUser = {
-                uid: user.uid,
-                name: user.displayName,
-                email: user.email,
-                avatar: user.photoURL
-            };
-            localStorage.setItem('aggelospito_club_user', JSON.stringify(currentUser));
-            await checkMemberStatus();
-        } else {
-            // Logged out
-            currentUser = null;
-            localStorage.removeItem('aggelospito_club_user');
-            showScreen('screenLogin');
-        }
-    });
-}
-
-    // ===== FIREBASE AUTH =====
-    function setupFirebaseAuthListener() {
-        auth.onAuthStateChanged(user => {
+        // 1) Setup auth listener
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
+                // Logged in
                 currentUser = {
-                    name: user.displayName || 'Χρήστης',
+                    uid: user.uid,
+                    name: user.displayName,
                     email: user.email,
-                    avatar: user.photoURL || ''
+                    avatar: user.photoURL
                 };
                 localStorage.setItem('aggelospito_club_user', JSON.stringify(currentUser));
-                checkMemberStatus();
+                await checkMemberStatus();
             } else {
+                // Logged out
+                currentUser = null;
+                localStorage.removeItem('aggelospito_club_user');
                 showScreen('screenLogin');
             }
         });
     }
 
     async function checkMemberStatus() {
-    try {
-        const userDocRef = doc(db, 'members', currentUser.uid);
-        const docSnap = await getDoc(userDocRef);
-        
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            // Check if admin
-            if (data.isAdmin) {
-                document.getElementById('adminGate').style.display = 'none';
-                document.getElementById('adminDashboard').style.display = 'block';
-                showScreen('screenAdmin');
-                refreshAdminPanel();
-            } else if (data.packageChosen && data.packageChosen !== 'none') {
-                showScreen('screenDashboard');
-                updateDashboard(data);
+        try {
+            const userDocRef = doc(db, 'members', currentUser.uid);
+            const docSnap = await getDoc(userDocRef);
+
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+
+                // Track sign-in using the Alexandra protocol
+                await updateDoc(userDocRef, {
+                    loginCount: increment(1),
+                    lastLogin: serverTimestamp(),
+                    avatar: currentUser.avatar || data.avatar || '',
+                    name: currentUser.name || data.name || 'Χρήστης'
+                });
+
+                // Check if admin
+                if (data.isAdmin) {
+                    document.getElementById('adminGate').style.display = 'none';
+                    document.getElementById('adminDashboard').style.display = 'block';
+                    showScreen('screenAdmin');
+                    refreshAdminPanel();
+                } else {
+                    // If not admin, always show subscription cards first upon connection as requested
+                    showScreen('screenSubscription');
+                    if (data.packageChosen && data.packageChosen !== 'none') {
+                        updateDashboard(data);
+                    } else {
+                        updateUserBars();
+                    }
+                }
             } else {
+                // Create user document // Using Alexandra protocol tracking
+                const newMember = {
+                    uid: currentUser.uid,
+                    displayName: currentUser.name || 'Χρήστης',
+                    email: currentUser.email,
+                    avatar: currentUser.avatar || '',
+                    name: currentUser.name || 'Χρήστης',
+                    packageChosen: "none",
+                    registrationDate: serverTimestamp(),
+                    isAdmin: false,
+                    status: 'pending',
+                    checkins: [],
+                    totalVisits: 0,
+                    loginCount: 1,
+                    lastLogin: serverTimestamp()
+                };
+                await setDoc(userDocRef, newMember);
                 showScreen('screenSubscription');
                 updateUserBars();
             }
-        } else {
-            // Create user document
-            const newMember = {
-                uid: currentUser.uid,
-                displayName: currentUser.name,
-                email: currentUser.email,
-                avatar: currentUser.avatar || '',
-                packageChosen: "none",
-                registrationDate: serverTimestamp(),
-                isAdmin: false,
-                status: 'pending',
-                checkins: [],
-                totalVisits: 0
-            };
-            await setDoc(userDocRef, newMember);
-            showScreen('screenSubscription');
-            updateUserBars();
+        } catch (e) {
+            console.error("Error fetching user data", e);
         }
-    } catch (e) {
-        console.error("Error fetching user data", e);
     }
-}
 
     // ===== SCREEN ROUTING =====
     window.showScreen = function (screenId) {
@@ -129,79 +117,37 @@ import { doc, getDoc, setDoc, updateDoc, serverTimestamp, collection, getDocs } 
             }
             if (screenId === 'screenDashboard') {
                 if (currentUser) {
-                    const member = findMemberByEmail(currentUser.email);
-                    if (member) updateDashboard(member);
+                    const userDocRef = doc(db, 'members', currentUser.uid);
+                    getDoc(userDocRef).then(docSnap => {
+                        if (docSnap.exists()) {
+                            updateDashboard(docSnap.data());
+                        }
+                    });
                 }
             }
             if (screenId === 'screenAdmin') {
-                const isAuthenticated = sessionStorage.getItem('aggelospito_admin_auth');
-                if (isAuthenticated) {
-                    document.getElementById('adminGate').style.display = 'none';
-                    document.getElementById('adminDashboard').style.display = 'block';
-                    refreshAdminPanel();
-                }
+                document.getElementById('adminGate').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                refreshAdminPanel();
             }
         }
     };
 
     // ===== GOOGLE LOGIN =====
     document.getElementById('googleLoginBtn')?.addEventListener('click', () => {
-        if (CONFIG.useDemoMode) {
-            signInWithGoogle();
-        } else {
-            // firebaseGoogleLogin();
-            signInWithGoogle();
-        }
+        signInWithGoogle();
     });
 
-    async function demoLogin() {
-        // Simulate Google login with a prompt
-        const name = prompt('🔐 Demo Mode\n\nΕισάγετε το ονοματεπώνυμό σας:', 'Μαρία Παπαδοπούλου');
-        if (!name) return;
-
-        const email = prompt('📧 Εισάγετε το email σας:', 'maria@example.com');
-        if (!email) return;
-
-        currentUser = {
-            name: name,
-            email: email,
-            avatar: ''
-        };
-
-        localStorage.setItem('aggelospito_club_user', JSON.stringify(currentUser));
-
-        // Check if already a member
-        const member = findMemberByEmail(email);
-        if (member) {
-            showScreen('screenDashboard');
-            updateDashboard(member);
-        } else {
-            showScreen('screenSubscription');
-            updateUserBars();
-        }
-    }
-
-    function firebaseGoogleLogin() {
-        // const provider = new firebase.auth.GoogleAuthProvider();
-        // auth.signInWithPopup(provider).catch(err => {
-        //     console.error('Google sign-in error:', err);
-        //     alert('Αποτυχία σύνδεσης. Δοκιμάστε ξανά.');
-        // });
-        alert('Firebase is disabled in Phase 1 mode.');
-    }
-
     // ===== LOGOUT =====
+    window.clubLogout = async function () {
+        await signOut(auth);
+        currentUser = null;
+        localStorage.removeItem('aggelospito_club_user');
+        showScreen('screenLogin');
+    };
+
     document.getElementById('logoutBtnSub')?.addEventListener('click', window.clubLogout);
     document.getElementById('logoutBtnDash')?.addEventListener('click', window.clubLogout);
-
-    
-window.clubLogout = async function() {
-    await signOut(auth);
-    currentUser = null;
-    localStorage.removeItem('aggelospito_club_user');
-    showScreen('screenLogin');
-};
-
 
     // ===== UPDATE USER BARS =====
     function updateUserBars() {
@@ -212,42 +158,48 @@ window.clubLogout = async function() {
             const emailEl = document.getElementById(`userEmail${suffix}`);
             const avatarEl = document.getElementById(`userAvatar${suffix}`);
 
-            if (nameEl) nameEl.textContent = currentUser.name;
+            if (nameEl) nameEl.textContent = currentUser.name || 'Χρήστης';
             if (emailEl) emailEl.textContent = currentUser.email;
             if (avatarEl) {
+                avatarEl.textContent = '';
                 if (currentUser.avatar) {
-                    avatarEl.innerHTML = `<img src="${currentUser.avatar}" alt="Avatar">`;
+                    const img = document.createElement('img');
+                    img.src = currentUser.avatar;
+                    img.alt = "Avatar";
+                    avatarEl.appendChild(img);
                 } else {
-                    avatarEl.textContent = currentUser.name.charAt(0).toUpperCase();
+                    avatarEl.textContent = (currentUser.name || '?').charAt(0).toUpperCase();
                 }
             }
         });
     }
 
     // ===== PLAN SELECTION =====
-    
-window.selectPlan = async function(planType) {
-    if (!currentUser) {
-        showScreen('screenLogin');
-        return;
-    }
-    const planNames = { basic: 'Basic Family (15€/μήνα)', premium: 'Premium Family (25€/μήνα)' };
+    window.selectPlan = async function (planType) {
+        if (!currentUser) {
+            showScreen('screenLogin');
+            return;
+        }
+        const planNames = { basic: 'BASIC (60€/μήνα)', premium: 'PREMIUM (70€/μήνα)' };
+        const planPrices = { basic: 60, premium: 70 };
+        const planTiers = { basic: 'BASIC', premium: 'PREMIUM' };
 
-    try {
-        const userDocRef = doc(db, 'members', currentUser.uid);
-        await updateDoc(userDocRef, {
-            packageChosen: planType,
-            planName: planNames[planType],
-            status: 'pending'
-        });
-        document.getElementById('selectedPlanName').textContent = planNames[planType];
-        showScreen('screenSuccess');
-    } catch (error) {
-        console.error("Failed to update subscription", error);
-        alert("Σφάλμα ενημέρωσης: " + error.message);
-    }
-};
-
+        try {
+            const userDocRef = doc(db, 'members', currentUser.uid);
+            await updateDoc(userDocRef, {
+                packageChosen: planType,
+                planName: planNames[planType],
+                price: planPrices[planType],
+                tier: planTiers[planType],
+                status: 'pending'
+            });
+            document.getElementById('selectedPlanName').textContent = planNames[planType];
+            showScreen('screenSuccess');
+        } catch (error) {
+            console.error("Failed to update subscription", error);
+            alert("Σφάλμα ενημέρωσης: " + error.message);
+        }
+    };
 
     // ===== CONFETTI EFFECT =====
     function launchConfetti() {
@@ -321,7 +273,7 @@ window.selectPlan = async function(planType) {
         const dashEmail = document.getElementById('dashUserEmail');
         const dashAvatarImg = document.getElementById('dashAvatarImg');
 
-        if (dashName) dashName.textContent = currentUser.name;
+        if (dashName) dashName.textContent = currentUser.name || member.name || member.displayName;
         if (dashEmail) dashEmail.textContent = currentUser.email;
         if (dashAvatarImg) {
             if (currentUser.avatar) {
@@ -329,27 +281,27 @@ window.selectPlan = async function(planType) {
                 dashAvatarImg.style.display = 'block';
             } else {
                 dashAvatarImg.style.display = 'none';
-                document.getElementById('dashAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+                document.getElementById('dashAvatar').textContent = (currentUser.name || '?').charAt(0).toUpperCase();
             }
         }
 
         // Plan info
         const planTitle = document.getElementById('dashPlanTitle');
-        if (planTitle) planTitle.textContent = member.planName || (member.plan === 'premium' ? 'Premium Family' : 'Basic Family');
+        if (planTitle) planTitle.textContent = member.planName || (member.plan === 'premium' || member.packageChosen === 'premium' ? 'PREMIUM' : 'BASIC');
 
         // Profile card meta chips
         const memberSinceEl = document.getElementById('dashMemberSince');
-        if (memberSinceEl && member.signupDate) {
-            memberSinceEl.textContent = formatDate(member.signupDate);
+        if (memberSinceEl && member.registrationDate) {
+            memberSinceEl.textContent = formatDate(member.registrationDate.toDate ? member.registrationDate.toDate() : member.registrationDate);
         }
         const profilePlanEl = document.getElementById('dashProfilePlan');
         if (profilePlanEl) {
-            profilePlanEl.textContent = member.plan === 'premium' ? 'Premium Family' : 'Basic Family';
+            profilePlanEl.textContent = member.plan === 'premium' || member.packageChosen === 'premium' ? 'PREMIUM' : 'BASIC';
         }
         const tierBadgeEl = document.getElementById('dashTierBadge');
         if (tierBadgeEl) {
-            tierBadgeEl.textContent = member.plan === 'premium' ? '👑' : '🌟';
-            tierBadgeEl.title = member.plan === 'premium' ? 'Premium Member' : 'Basic Member';
+            tierBadgeEl.textContent = member.plan === 'premium' || member.packageChosen === 'premium' ? '👑' : '🌟';
+            tierBadgeEl.title = member.plan === 'premium' || member.packageChosen === 'premium' ? 'PREMIUM Member' : 'BASIC Member';
         }
 
         // Status
@@ -378,8 +330,8 @@ window.selectPlan = async function(planType) {
         const signupDate = document.getElementById('dashSignupDate');
         const expiryDate = document.getElementById('dashExpiryDate');
 
-        if (signupDate && member.signupDate) {
-            signupDate.textContent = formatDate(member.signupDate);
+        if (signupDate && member.registrationDate) {
+            signupDate.textContent = formatDate(member.registrationDate.toDate ? member.registrationDate.toDate() : member.registrationDate);
         }
         if (expiryDate) {
             if (member.expiryDate) {
@@ -419,7 +371,6 @@ window.selectPlan = async function(planType) {
             weeks.add(`${d.getFullYear()}-${weekNum}`);
         });
 
-        // Count consecutive weeks from now
         const now = new Date();
         let currentStreak = 0;
         let weekOffset = 0;
@@ -453,57 +404,26 @@ window.selectPlan = async function(planType) {
     }
 
     // ===== ADMIN PANEL =====
-    window.adminLogin = function () {
-        const input = document.getElementById('adminPasswordInput');
-        const error = document.getElementById('adminError');
-
-        if (input.value === CONFIG.adminPassword) {
-            sessionStorage.setItem('aggelospito_admin_auth', 'true');
-            document.getElementById('adminGate').style.display = 'none';
-            document.getElementById('adminDashboard').style.display = 'block';
-            error.style.display = 'none';
-            refreshAdminPanel();
-
-            // Trigger animations
-            setTimeout(() => {
-                document.querySelectorAll('#adminDashboard .animate-on-scroll').forEach(el => {
-                    el.classList.add('visible');
-                });
-            }, 100);
-        } else {
-            error.style.display = 'block';
-            input.classList.add('shake');
-            setTimeout(() => input.classList.remove('shake'), 400);
-        }
-    };
-
-    // Enter key for admin password
-    document.getElementById('adminPasswordInput')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') window.adminLogin();
-    });
+    let unsubscribeAdmin = null;
 
     window.adminLogout = function () {
-        sessionStorage.removeItem('aggelospito_admin_auth');
-        document.getElementById('adminGate').style.display = 'flex';
-        document.getElementById('adminDashboard').style.display = 'none';
-        document.getElementById('adminPasswordInput').value = '';
+        if (unsubscribeAdmin) unsubscribeAdmin();
+        showScreen('screenDashboard');
     };
 
     function refreshAdminPanel() {
-        if (CONFIG.useDemoMode) {
-            renderAdminMembers(members);
-            updateAdminStats(members);
-        } else {
-            // Fetch from Firestore
-            /*
-            db.collection('members').get().then(snapshot => {
+        if (unsubscribeAdmin) unsubscribeAdmin();
+        try {
+            unsubscribeAdmin = onSnapshot(collection(db, 'members'), (snapshot) => {
                 const firestoreMembers = [];
-                snapshot.forEach(doc => firestoreMembers.push({ ...doc.data(), id: doc.id }));
+                snapshot.forEach(docSnap => firestoreMembers.push({ ...docSnap.data(), id: docSnap.id }));
                 renderAdminMembers(firestoreMembers);
                 updateAdminStats(firestoreMembers);
-            }).catch(err => console.error('Admin fetch error:', err));
-            */
-            renderAdminMembers(members);
+            }, (error) => {
+                console.error("Admin real-time listener error:", error);
+            });
+        } catch (err) {
+            console.error('Admin fetch setup error:', err);
         }
     }
 
@@ -547,117 +467,151 @@ window.selectPlan = async function(planType) {
         }
 
         if (filtered.length === 0) {
-            tbody.innerHTML = '';
+            tbody.textContent = '';
             if (emptyState) emptyState.style.display = 'block';
             return;
         }
 
         if (emptyState) emptyState.style.display = 'none';
+        tbody.textContent = '';
 
-        tbody.innerHTML = filtered.map(m => {
-            const initial = (m.name || '?').charAt(0).toUpperCase();
-            const avatarContent = m.avatar
-                ? `<img src="${m.avatar}" alt="avatar">`
-                : initial;
+        filtered.forEach(m => {
+            const tr = document.createElement('tr');
 
-            const planBadge = m.plan === 'premium'
-                ? '<span class="plan-badge premium">Premium</span>'
-                : '<span class="plan-badge basic">Basic</span>';
+            const tdMember = document.createElement('td');
+            const divCell = document.createElement('div');
+            divCell.className = "member-cell";
+            const divAvatar = document.createElement('div');
+            divAvatar.className = "member-cell-avatar";
 
-            const statusClass = m.status === 'active' ? 's-active' : (m.status === 'expired' ? 's-expired' : 's-pending');
-            const statusLabel = m.status === 'active' ? 'Ενεργό' : (m.status === 'expired' ? 'Ληγμένο' : 'Εκκρεμές');
-            const statusDotClass = m.status;
+            if (m.avatar) {
+                const img = document.createElement('img');
+                img.src = m.avatar;
+                img.alt = "avatar";
+                divAvatar.appendChild(img);
+            } else {
+                divAvatar.textContent = (m.name || '?').charAt(0).toUpperCase();
+            }
 
-            const activateDisabled = m.status === 'active' ? 'disabled' : '';
-            const checkinDisabled = m.status !== 'active' ? 'disabled' : '';
+            const spanName = document.createElement('span');
+            spanName.className = "member-cell-name";
 
-            return `
-        <tr>
-          <td>
-            <div class="member-cell">
-              <div class="member-cell-avatar">${avatarContent}</div>
-              <span class="member-cell-name">${m.name || '—'}</span>
-            </div>
-          </td>
-          <td>${m.email || '—'}</td>
-          <td>${planBadge}</td>
-          <td>
-            <span class="table-status ${statusClass}">
-              <span class="status-dot ${statusDotClass}"></span>
-              ${statusLabel}
-            </span>
-          </td>
-          <td>${formatDate(m.signupDate)}</td>
-          <td>${(m.checkins || []).length}</td>
-          <td>
-            <button class="admin-action-btn activate-btn" onclick="activateMember('${m.email}')" ${activateDisabled}>
-              <i class="fas fa-check"></i> Ενεργοποίηση
-            </button>
-            <button class="admin-action-btn checkin-btn" onclick="checkinMember('${m.email}')" ${checkinDisabled}>
-              <i class="fas fa-map-marker-check"></i> Check-in
-            </button>
-          </td>
-        </tr>
-      `;
-        }).join('');
+            // Inject Tier Icon (Admin-only isolated icons)
+            const tierIcon = document.createElement('i');
+            if (m.plan === 'premium' || m.packageChosen === 'premium') {
+                tierIcon.className = "fas fa-crown admin-tier-crown";
+                tierIcon.title = "Premium Member";
+            } else {
+                tierIcon.className = "fas fa-star admin-tier-star";
+                tierIcon.title = "Basic Member";
+            }
+            spanName.appendChild(tierIcon);
+            spanName.appendChild(document.createTextNode(m.name || m.displayName || '—'));
+
+            divCell.appendChild(divAvatar);
+            divCell.appendChild(spanName);
+            tdMember.appendChild(divCell);
+
+            const tdEmail = document.createElement('td');
+            tdEmail.textContent = m.email || '—';
+
+            const tdPlan = document.createElement('td');
+            const spanPlan = document.createElement('span');
+            spanPlan.className = m.plan === 'premium' || m.packageChosen === 'premium' ? "plan-badge premium" : "plan-badge basic";
+            spanPlan.textContent = m.plan === 'premium' || m.packageChosen === 'premium' ? "Premium" : "Basic";
+            tdPlan.appendChild(spanPlan);
+
+            const tdStatus = document.createElement('td');
+            const badge = document.createElement('div');
+            // Using Admin-only badge classes
+            badge.className = "admin-status-badge " + (m.status === 'active' ? 's-active' : (m.status === 'expired' ? 's-expired' : 's-pending'));
+
+            const statusIcon = document.createElement('i');
+            statusIcon.className = m.status === 'active' ? 'fas fa-check-circle' : (m.status === 'pending' ? 'fas fa-clock' : 'fas fa-exclamation-circle');
+
+            badge.appendChild(statusIcon);
+            badge.appendChild(document.createTextNode(m.status === 'active' ? 'ΕΝΕΡΓΟ' : (m.status === 'expired' ? 'ΛΗΓΜΕΝΟ' : 'ΕΚΚΡΕΜΕΣ')));
+            tdStatus.appendChild(badge);
+
+            const tdDate = document.createElement('td');
+            if (m.signupDate || m.registrationDate) {
+                tdDate.textContent = formatDate(m.signupDate || (m.registrationDate && m.registrationDate.toDate ? m.registrationDate.toDate() : m.registrationDate));
+            } else {
+                tdDate.textContent = '—';
+            }
+
+            const tdLastLogin = document.createElement('td');
+            if (m.lastLogin && m.lastLogin.toDate) {
+                tdLastLogin.textContent = formatDate(m.lastLogin.toDate());
+            } else {
+                tdLastLogin.textContent = '—';
+            }
+
+            const tdVisits = document.createElement('td');
+            tdVisits.textContent = (m.checkins || []).length;
+
+            const tdActions = document.createElement('td');
+
+            const btnActivate = document.createElement('button');
+            btnActivate.className = "admin-action-btn activate-btn";
+            btnActivate.title = "Εναλλαγή Κατάστασης (Toggle)";
+            btnActivate.innerHTML = '<i class="fas fa-sync-alt"></i>';
+            btnActivate.onclick = () => activateMember(m.id);
+
+            const btnCheckin = document.createElement('button');
+            btnCheckin.className = "admin-action-btn checkin-btn";
+            btnCheckin.title = "Γρήγορο Check-in";
+            if (m.status !== 'active') btnCheckin.disabled = true;
+            btnCheckin.innerHTML = '<i class="fas fa-user-check"></i>';
+            btnCheckin.onclick = () => checkinMember(m.id);
+
+            tdActions.appendChild(btnActivate);
+            tdActions.appendChild(btnCheckin);
+
+            tr.appendChild(tdMember);
+            tr.appendChild(tdEmail);
+            tr.appendChild(tdPlan);
+            tr.appendChild(tdStatus);
+            tr.appendChild(tdDate);
+            tr.appendChild(tdLastLogin);
+            tr.appendChild(tdVisits);
+            tr.appendChild(tdActions);
+
+            tbody.appendChild(tr);
+        });
     }
 
     // ===== ADMIN ACTIONS =====
-    window.activateMember = function (email) {
-        if (CONFIG.useDemoMode) {
-            const member = findMemberByEmail(email);
-            if (member) {
-                const now = new Date();
-                const expiry = new Date(now);
-                expiry.setMonth(expiry.getMonth() + 13); // 12 months + 1 free month
-
-                member.status = 'active';
-                member.activationDate = now.toISOString();
-                member.expiryDate = expiry.toISOString();
-                saveMembers();
-                refreshAdminPanel();
-            }
-        } else {
-            /*
+    window.activateMember = async function (uid) {
+        try {
+            const docRef = doc(db, 'members', uid);
             const now = new Date();
             const expiry = new Date(now);
-            expiry.setMonth(expiry.getMonth() + 13);
+            expiry.setMonth(expiry.getMonth() + 1);
 
-            db.collection('members').doc(email).update({
+            await updateDoc(docRef, {
                 status: 'active',
-                activationDate: now.toISOString(),
+                activationDate: serverTimestamp(),
                 expiryDate: expiry.toISOString()
-            }).then(() => refreshAdminPanel())
-                .catch(err => console.error('Activate error:', err));
-            */
+            });
+            showToast(`✅ Ενεργοποιήθηκε επιτυχώς!`);
+        } catch (err) {
+            console.error('Activate error:', err);
+            showToast(`❌ Σφάλμα ενεργοποίησης`);
         }
     };
 
-    window.checkinMember = function (email) {
-        const now = new Date().toISOString();
-
-        if (CONFIG.useDemoMode) {
-            const member = findMemberByEmail(email);
-            if (member) {
-                if (!member.checkins) member.checkins = [];
-                member.checkins.push(now);
-                member.totalVisits = member.checkins.length;
-                saveMembers();
-                refreshAdminPanel();
-
-                // Visual feedback
-                showToast(`✅ Check-in: ${member.name}`);
-            }
-        } else {
-            /*
-            db.collection('members').doc(email).update({
-                checkins: firebase.firestore.FieldValue.arrayUnion(now),
-                totalVisits: firebase.firestore.FieldValue.increment(1)
-            }).then(() => {
-                refreshAdminPanel();
-                showToast(`✅ Check-in recorded`);
-            }).catch(err => console.error('Checkin error:', err));
-            */
+    window.checkinMember = async function (uid) {
+        try {
+            const docRef = doc(db, 'members', uid);
+            await updateDoc(docRef, {
+                checkins: arrayUnion(new Date().toISOString()),
+                totalVisits: increment(1)
+            });
+            showToast(`✅ Check-in καταγράφηκε επιτυχώς`);
+        } catch (err) {
+            console.error('Checkin error:', err);
+            showToast(`❌ Σφάλμα Check-in`);
         }
     };
 
@@ -710,30 +664,33 @@ window.selectPlan = async function(planType) {
 
     // ===== MEMBERSHIP EXPIRY CHECK =====
     function checkExpirations() {
-        const now = new Date();
-        members.forEach(m => {
-            if (m.status === 'active' && m.expiryDate) {
-                if (new Date(m.expiryDate) < now) {
-                    m.status = 'expired';
-                }
-            }
-        });
-        saveMembers();
+        console.log("Expiry check called. Consider implementing Firebase Cloud Functions for robust expiry handling.");
     }
 
     // Run expiry check
-    if (CONFIG.useDemoMode) {
-        // Delay to ensure members are loaded
-        setTimeout(checkExpirations, 1000);
+    setInterval(checkExpirations, 1000 * 60 * 60); // Run every hour
+
+    async function signInWithGoogle() {
+        const provider = new GoogleAuthProvider();
+        try {
+            // Enforce browser session persistence to auto-logout on window close
+            await setPersistence(auth, browserSessionPersistence);
+            const result = await signInWithPopup(auth, provider);
+            if (result && result.user) {
+                currentUser = {
+                    uid: result.user.uid,
+                    name: result.user.displayName,
+                    email: result.user.email,
+                    avatar: result.user.photoURL
+                };
+                localStorage.setItem('aggelospito_club_user', JSON.stringify(currentUser));
+                // Explicitly force the status check which handles the appropriate showScreen() redirect
+                await checkMemberStatus();
+            }
+        } catch (error) {
+            console.error("Google login failed", error);
+            alert("Αποτυχία σύνδεσης: " + error.message);
+        }
     }
 
-
-async function signInWithGoogle() {
-    const provider = new GoogleAuthProvider();
-    try {
-        await signInWithPopup(auth, provider);
-    } catch (error) {
-        console.error("Google login failed", error);
-        alert("Αποτυχία σύνδεσης: " + error.message);
-    }
-}
+})();
